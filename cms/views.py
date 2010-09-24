@@ -845,20 +845,22 @@ def delete_article(request, keyid):
         if article.author != request.user and not request.user.is_superuser:
             return generate(request,'tip.html',{'tip':_(u'You do not have permission to delete the article.')})
         cate_id = article.cate.key().id()
+        
         articlecontent = get_art_con(int(keyid))
-        
-        art_content = articlecontent.content
-        imgsrcs = get_all_img(art_content)
-        if imgsrcs:
-            imgslide = Slide.all().filter('imgsrc =', imgsrcs[0]).get()
-            if imgslide:
-                imgslide.delete()
-                memcache.delete(slide_list_key)
-            for img in imgsrcs:
-                if img[:16]=="/cms/photo_show/" and img[-4:]==".jpg":
-                    photo = Photo.get(img[16:-4])
-                    photo.delete()        
-        
+        if articlecontent:
+            art_content = articlecontent.content
+            imgsrcs = get_all_img(art_content)
+            if imgsrcs:
+                imgslide = Slide.all().filter('imgsrc =', imgsrcs[0]).get()
+                if imgslide:
+                    imgslide.delete()
+                    memcache.delete(slide_list_key)
+                for img in imgsrcs:
+                    if img[:16]=="/cms/photo_show/" and img[-4:]==".jpg":
+                        photo = Photo.get(img[16:-4])
+                        photo.delete()        
+            articlecontent.delete()
+
         art_comments = article.comment_set
         updated = []
         for comment in art_comments:
@@ -870,7 +872,6 @@ def delete_article(request, keyid):
         
         del_taglist(article.tags)
         
-        articlecontent.delete()
         article.delete()
         
         art_keyid = int(keyid)
